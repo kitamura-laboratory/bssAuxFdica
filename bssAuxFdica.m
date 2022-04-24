@@ -41,24 +41,29 @@ function [estSig, cost] = bssAuxFdica(obsSig, nSrc, args)
 %   sampFreq*: sampling frequency of observed signal [Hz]
 %              (scalar, default: 16000, used for plotting spectrogram and 
 %              DOA-based permutation solver)
-%  isPowRatio*: use power ratio feature for clustering (true/false, 
-%               false uses raw amplitude spectrogram, default: true)
-%     typeCor*: type of cost function 
-%               ("Gl", "Lo", or "Gl+Lo", default: "Gl+Lo")
-%               "Gl": use global correlation
-%               "Lo": use local correlation
-%               "Gl+Lo": use both global and local correlations
-%   deltaFreq*: adjacent frequencies for "Lo" correlation 
-%               (scalar, default: 3, 0 means adjacent cost is not used)
-%   ratioFreq*: harmoinc frequencies for "Lo" correlation (scalar, 
-%               if ratioFreq=3, round(iFreq/2), round(iFreq/3), 2*iFreq, 
-%               and 3*iFreq and their adjacent frequencies 
-%               (e.g., 2*iFreq-1 and 2*iFreq+1) are considered, default: 2,
-%               0 means harmonic cost is not used)
-%      micPos*: position of each microphone [m] (row vector)
-%      srcSig*: oracle source image signals used for "IPS" permutation
-%               solver (sample x channel x source)
-%  Arguments with * are not necessary
+% isPowRatio*: use power ratio feature for clustering (true/false, 
+%              false uses raw amplitude spectrogram, default: true, used 
+%              for COR-based permutation solver)
+%    typeCor*: type of cost function 
+%              ("Gl", "Lo", or "Gl+Lo", default: "Gl+Lo", used for
+%              COR-based permutation solver)
+%              "Gl": use global correlation
+%              "Lo": use local correlation
+%              "Gl+Lo": use both global and local correlations
+%  deltaFreq*: adjacent frequencies for "Lo" correlation 
+%              (scalar, default: 3, 0 means adjacent cost is not used, used
+%              for COR-based permutation solver)
+%  ratioFreq*: harmoinc frequencies for "Lo" correlation (scalar, 
+%              if ratioFreq=3, round(iFreq/2), round(iFreq/3), 2*iFreq, 
+%              and 3*iFreq and their adjacent frequencies 
+%              (e.g., 2*iFreq-1 and 2*iFreq+1) are considered, default: 2,
+%              0 means harmonic cost is not used, used for COR-based 
+%              permutation solver)
+%     micPos*: position of each microphone [m] (row vector, used for 
+%              DOR-based permutation solver)
+%     srcSig*: oracle source image signals used for "IPS" permutation
+%              solver (sample x channel x source)
+% Arguments with * are not necessary
 %
 % [Output]
 %      estSig: estimated signal obtained by FDICA (sample x source)
