@@ -30,7 +30,7 @@ function [estSig, cost] = bssAuxFdica(obsSig, nSrc, args)
 %              projected by projection back technique 
 %              (scalar or row vector, default: 1) 
 %  permSolver: type of permutation solver 
-%              ("none", "COR", "DOA", or "PPS", default: "COR")
+%              ("none", "COR", "DOA", or "IPS", default: "COR")
 %              "none": do not apply permutation solver after FDICA
 %              "COR": correlation-based permutation solver
 %              "DOA": direction-of-arrivals-based permutation solver
@@ -75,7 +75,7 @@ function [estSig, cost] = bssAuxFdica(obsSig, nSrc, args)
 %        DGTtool.m (https://github.com/KoheiYatabe/DGTtool)
 %        permSolverCor.m
 %        permSolverDoa.m
-%        permSolverPps.m
+%        permSolverIps.m
 %
 
 % Check arguments and set default values
