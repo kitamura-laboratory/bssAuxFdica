@@ -81,22 +81,22 @@ function [estSig, cost] = bssAuxFdica(obsSig, nSrc, args)
 % Check arguments and set default values
 arguments
     obsSig (:,:) double
-    nSrc (1,1) {mustBeInteger, mustBePositive}
-    args.fftSize (1,1) {mustBeInteger, mustBePositive} = 1024
-    args.shiftSize (1,1) {mustBeInteger, mustBePositive} = 512
-    args.nIter (1,1) {mustBeInteger, mustBePositive} = 50
-    args.isWhiten (1,1) {mustBeA(args.isWhiten, "logical")} = true
-    args.srcModel (1,1) {mustBeMember(args.srcModel, ["LAP", "TVG"])} = "LAP"
-    args.refMic (1,:) {mustBeInteger, mustBePositive} = 1
-    args.permSolver (1,1) {mustBeMember(args.permSolver, ["none", "COR", "DOA", "IPS"])} = "COR"
-    args.isDraw (1,1) {mustBeA(args.isDraw, "logical")} = false
-    args.sampFreq (1,1) {mustBePositive} = 16000
-    args.isPowRatio (1,1) {mustBeA(args.isPowRatio, "logical")} = true
-    args.typeCor (1,1) {mustBeMember(args.typeCor, ["Gl", "Lo", "Gl+Lo"])} = "Gl+Lo"
-    args.deltaFreq (1,1) {mustBeInteger, mustBeNonnegative} = 3
-    args.ratioFreq (1,1) {mustBeInteger, mustBeNonnegative} = 2
-    args.micPos (1,:) {mustBeNonnegative}
-    args.srcSig (:,:,:) {mustBeNumeric}
+    nSrc (1,1) double {mustBeInteger, mustBePositive}
+    args.fftSize (1,1) double {mustBeInteger, mustBePositive} = 1024
+    args.shiftSize (1,1) double {mustBeInteger, mustBePositive} = 512
+    args.nIter (1,1) double {mustBeInteger, mustBePositive} = 50
+    args.isWhiten (1,1) logical = true
+    args.srcModel (1,1) string {mustBeMember(args.srcModel, ["LAP", "TVG"])} = "LAP"
+    args.refMic (1,:) double {mustBeInteger, mustBePositive} = 1
+    args.permSolver (1,1) string {mustBeMember(args.permSolver, ["none", "COR", "DOA", "IPS"])} = "COR"
+    args.isDraw (1,1) logical = false
+    args.sampFreq (1,1) double {mustBePositive} = 16000
+    args.isPowRatio (1,1) logical = true
+    args.typeCor (1,1) string {mustBeMember(args.typeCor, ["Gl", "Lo", "Gl+Lo"])} = "Gl+Lo"
+    args.deltaFreq (1,1) double {mustBeInteger, mustBeNonnegative} = 3
+    args.ratioFreq (1,1) double {mustBeInteger, mustBeNonnegative} = 2
+    args.micPos (1,:) double {mustBeNonnegative}
+    args.srcSig (:,:,:) double {mustBeNumeric}
 end
 fftSize = args.fftSize;
 shiftSize = args.shiftSize;
