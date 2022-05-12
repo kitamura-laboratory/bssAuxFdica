@@ -109,7 +109,7 @@ isDraw = args.isDraw;
 
 % Check argument errors
 [sigLen, nCh] = size(obsSig, [1, 2]);
-if nSrc < nCh; error("'nSrc' must be equal or grater than size(obsSig, 2).\n"); end
+if nSrc > nCh; error("'nSrc' must be equal or grater than size(obsSig, 2).\n"); end
 if fftSize < shiftSize; error("'shiftSize' must be equal or less than fftSize.\n"); end
 if numel(refMic) > nCh; error("numel(refMic) must be equal or less than size(obsSig, 2).\n"); end
 
