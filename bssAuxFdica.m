@@ -23,7 +23,7 @@ function [estSig, cost] = bssAuxFdica(obsSig, nSrc, args)
 %              (scalar, default: 50)
 %    isWhiten: apply whitening before BSS (true/false, default: true)
 %    srcModel: generative model of each source 
-%              ("LAP" or "TGV", default: "LAP")
+%              ("LAP" or "TVG", default: "LAP")
 %              "LAP": isotropic complex Laplace distribution
 %              "TVG": isotropic time-varying complex Gaussian distribution
 %      refMic: reference microphone onto which estimated spectrogram is
@@ -197,7 +197,7 @@ function [Y, W, cost] = local_auxFdica(X, nIter, srcModel, isDraw)
 % [inputs]
 %       X: observed spectrogram (I x J x M, nFreq x nTime x nCh, nCh=nSrc)
 %   nIter: number of iterations
-%   model: generative model of each source ("LAP" or "TGV")
+%   model: generative model of each source ("LAP" or "TVG")
 %  isDraw: draw cost function behavior or not
 %
 % [outputs]
