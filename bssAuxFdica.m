@@ -5,12 +5,12 @@ function [estSig, cost] = bssAuxFdica(obsSig, nSrc, args)
 % [Syntax]
 %   Using traditional name-value pair expression:
 %   [estSig, cost] = bssAuxFdica(obsSig, nSrc, "fftSize", 1024, 
-%                    "shiftSize", 512, "nIter", 50, "isWritten", true, 
+%                    "shiftSize", 512, "nIter", 50, "isWhiten", true, 
 %                    "srcModel", "LAP", "refMic", 1 "permSolver", "COR", 
 %                    "isDraw", false, "sampFreq", 16000)
 %   Using pythonic expression (later R2021a):
 %   [estSig, cost] = bssAuxFdica(obsSig, nSrc, fftSize=1024, 
-%                    shiftSize=512, nIter=50, isWritten=true, 
+%                    shiftSize=512, nIter=50, isWhiten=true, 
 %                    srcModel="LAP", refMic=1, permSolver="COR", 
 %                    isDraw=false, sampFreq=16000)
 %
@@ -109,7 +109,7 @@ isDraw = args.isDraw;
 
 % Check argument errors
 [sigLen, nCh] = size(obsSig, [1, 2]);
-if nSrc > nCh; error("'nSrc' must be equal or grater than size(obsSig, 2).\n"); end
+if nSrc > nCh; error("'nSrc' must be equal or less than size(obsSig, 2).\n"); end
 if fftSize < shiftSize; error("'shiftSize' must be equal or less than fftSize.\n"); end
 if numel(refMic) > nCh; error("numel(refMic) must be equal or less than size(obsSig, 2).\n"); end
 
@@ -121,7 +121,7 @@ obsSpec = F.DGT(obsSig); % STFT
 if isWhiten
     obsSpecInput = local_whitening(obsSpec, nSrc);
 else
-    obsSpecInput = obsSpec;
+    obsSpecInput = obsSpec(:, :, 1:nSrc); % discard unnecessary channels
 end
 
 % Apply FDICA
@@ -195,14 +195,14 @@ function [Y, W, cost] = local_auxFdica(X, nIter, srcModel, isDraw)
 % BSS using FDICA
 %
 % [inputs]
-%       X: observed spectrogram (I x J x M, nFreq x nTime x nCh, nCh=nSrc)
-%   nIter: number of iterations
-%   model: generative model of each source ("LAP" or "TVG")
-%  isDraw: draw cost function behavior or not
+%        X: observed spectrogram (I x J x M, nFreq x nTime x nCh, nCh=nSrc)
+%    nIter: number of iterations
+% srcModel: generative model of each source ("LAP" or "TVG")
+%   isDraw: draw cost function behavior or not
 %
 % [outputs]
-%       Y: estimated spectrogram (I x J x N, nFreq x nTime x nSrc)
-%    cost: cost function values of FDICA in each iteration (nIter x 1)
+%        Y: estimated spectrogram (I x J x N, nFreq x nTime x nSrc)
+%     cost: cost function values of FDICA in each iteration (nIter x 1)
 %
 
 % Initialize
