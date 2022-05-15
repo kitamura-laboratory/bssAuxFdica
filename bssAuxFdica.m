@@ -125,9 +125,7 @@ else
 end
 
 % Apply FDICA
-tic();
 [estSpecFdica, demixMat, cost] = local_auxFdica(obsSpecInput, nIter, srcModel, isDraw);
-toc();
 
 % Apply projection back technique
 estSpecFdicaFix = local_projectionBack(estSpecFdica, obsSpec(:,:,refMic));
