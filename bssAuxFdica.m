@@ -273,26 +273,36 @@ function fixY = local_projectionBack(Y, S)
 %         or scale-fitted estimated source images (I x J x N x M)
 %
 
-% Initialize
-[I, J, N] = size(Y, [1, 2, 3]); % nFreq x nTime x nSrc
-M = size(S, 3); % nCh
-
 % Projection back
-A = zeros(M, N, I); % frequency-wise projection matrix
-fixY = zeros(I, J, N, M); % scale-fixed estimated spectrograms
-for i = 1:I
-    for m = 1:M
-        Yi = permute(Y(i, :, :), [3, 2, 1]); % I x J x N -> N x J x 1
-        A(m, :, i) = S(i, :, m)*Yi'/(Yi*Yi');
-    end
-end
-for n = 1:N
-    for m = 1:M
-        for i = 1:I
-            fixY(i, :, n, m) = A(m, n, i)*Y(i, :, n);
-        end
-    end
-end
+Yp = permute(Y, [3, 2, 1]); % N x J x I
+Sp = permute(S, [3, 2, 1]); % 1 x J x 1 or M x J x I
+Yph = pagectranspose(Yp); % J x N x I, pagewise Hermitian transpose (Yp')
+YpYph = pagemtimes(Yp, Yph); % N x N x I, pagewise matrix multiplication (Yp*Yp')
+YphOnYpYph = pagemrdivide(Yph, YpYph); % J x N x I, pagewise matrix right-division (Yp'/(Yp*Yp'))
+A = pagemtimes(Sp, YphOnYpYph); % 1 x N x I or M x N x I, pagewise matrix multiplication (Sp * Yp'/(Yp*Yp'))
+Ap = permute(A, [1, 2, 4, 3]); % M x N x 1 x I
+Ypp = permute(Yp, [4, 1, 2, 3]); % 1 x N x J x I
+fixY = Ap .* Ypp; % M x N x J x I
+fixY = permute(fixY, [4, 3, 2, 1]); % I x J x N x M
+
+% Readable implementation
+% [I, J, N] = size(Y, [1, 2, 3]); % nFreq x nTime x nSrc
+% M = size(S, 3); % nCh
+% A = zeros(M, N, I); % frequency-wise projection matrix
+% for i = 1:I
+%     for m = 1:M
+%         Yi = permute(Y(i, :, :), [3, 2, 1]); % I x J x N -> N x J x 1
+%         A(m, :, i) = S(i, :, m)*Yi'/(Yi*Yi');
+%     end
+% end
+% fixY = zeros(I, J, N, M); % scale-fixed estimated spectrograms
+% for n = 1:N
+%     for m = 1:M
+%         for i = 1:I
+%             fixY(i, :, n, m) = A(m, n, i)*Y(i, :, n);
+%         end
+%     end
+% end
 end
 
 %--------------------------------------------------------------------------
