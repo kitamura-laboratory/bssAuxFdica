@@ -125,7 +125,9 @@ else
 end
 
 % Apply FDICA
+tic();
 [estSpecFdica, demixMat, cost] = local_auxFdica(obsSpecInput, nIter, srcModel, isDraw);
+toc();
 
 % Apply projection back technique
 estSpecFdicaFix = local_projectionBack(estSpecFdica, obsSpec(:,:,refMic));
@@ -209,10 +211,11 @@ function [Y, W, cost] = local_auxFdica(X, nIter, srcModel, isDraw)
 % Initialize
 [I, J, M] = size(X, [1,2,3]); % nFreq x nTime x nCh
 N = M; % number of sources
-E = eye(M);
-W = repmat(E, [1, 1, I]); % initial demixing matrix (N x M x I)
+E = repmat(eye(M), [1, 1, I]);
+W = E; % initial demixing matrix (N x M x I)
 Y = X; % initial estimated spectrogram
 Xp = permute(X, [3, 2, 1]); % M x J x I
+Xph = pagectranspose(Xp); % J x M x I, pagewise Hermitian transpose (Xp')
 Yp = permute(Y, [3, 2, 1]); % N x J x I
 cost = zeros(nIter, 1);
 if isDraw
@@ -228,17 +231,28 @@ for iIter = 1:nIter
     elseif srcModel == "TVG"
         Rp = max(abs(Yp).^2, 100*eps);
     end
-    for i = 1:I
-        for n = 1:N
-            rn = Rp(n, :, i); % 1 x J
-            dg = ones(M, 1)*(1./rn); % M x J
-            Vk = (dg.*Xp(:, :, i))*Xp(:, :, i)'/J; % M x M
-            wn = (W(:, :, i)*Vk) \ E(:, n);
-            wn = wn/sqrt((wn')*Vk*wn);
-            Yp(n, :, i) = (wn')*Xp(:, :, i);
-            W(n, :, i) = wn';
-        end
+    
+    invRp = 1./Rp; % N x J x I
+    for n = 1:N
+        D = repmat(invRp(n, :, :), [M, 1, 1]); % M x J x I
+        Vk = pagemtimes(D.*Xp, Xph)/J; % M x M x I, pagewise matrix multiplication ((D(:,:,i).*Xp(:,:,i))*Xp(:,:,i)'/J)
+        wn = pagemldivide(pagemtimes(W, Vk), E(:, n, :)); % M x 1 x I, pagewise operation ((W(:,:,i)*Vk(:,:,i)) \ E(:, n, :))
+        wnh = pagectranspose(wn); % 1 x M x I, pagewise Hermitian transpose (wn(:,:,i)')
+        Yp(n, :, :) = pagemtimes(wnh, Xp); % 1 x J x I, pagewise matrix multiplication (wnh(:,:,i)*Xp(:,:,i))
+        W(n, :, :) = wnh;
     end
+% Readable implimentation
+%     for i = 1:I
+%         for n = 1:N
+%             rn = Rp(n, :, i); % 1 x J
+%             dg = ones(M, 1)*(1./rn); % M x J
+%             Vk = (dg.*Xp(:, :, i))*Xp(:, :, i)'/J; % M x M
+%             wn = (W(:, :, i)*Vk) \ E(:, n, i);
+%             wn = wn/sqrt((wn')*Vk*wn);
+%             Yp(n, :, i) = (wn')*Xp(:, :, i);
+%             W(n, :, i) = wn';
+%         end
+%     end
     if isDraw
         cost(iIter+1, 1) = local_calcFdicaCost(Yp, W, srcModel, I, J);
     end
