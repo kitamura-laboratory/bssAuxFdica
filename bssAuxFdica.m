@@ -177,8 +177,9 @@ function [Y, dP] = local_whitening(X, N)
 Y = zeros(I, J, N);
 
 % Apply frequency-wise whitening
+Xp = permute(X, [3, 2, 1]); % I x J x M -> M x J x I
 for i = 1:I
-    Xi = permute(X(i, :, :), [3, 2, 1]); % I x J x M -> M x J x 1
+    Xi = Xp(:, :, i); % M x J
     V = Xi*(Xi')/J; % covariance matrix of data matrix X (K x K)
     [P, D] = eig(V); % eigenvalue decomposition (V = P*D*inv(P), P includes eigenvectors and D is a diagonal matrix with eigenvalues)
     [~, idx] = sort(diag(D), "descend"); % sort eigenvalues in descending order
@@ -222,13 +223,14 @@ end
 fprintf("Iteration:    ");
 for iIter = 1:nIter
     fprintf("\b\b\b\b%4d", iIter);
+    if srcModel == "LAP"
+        Rp = max(abs(Yp), 100*eps);
+    elseif srcModel == "TVG"
+        Rp = max(abs(Yp).^2, 100*eps);
+    end
     for i = 1:I
         for n = 1:N
-            if srcModel == "LAP"
-                rn = max(abs(Yp(n, :, i)), 100*eps); % 1 x J
-            elseif srcModel == "TVG"
-                rn = max(abs(Yp(n, :, i)).^2, 100*eps); % 1 x J
-            end
+            rn = Rp(n, :, i); % 1 x J
             dg = ones(M, 1)*(1./rn); % M x J
             Vk = (dg.*Xp(:, :, i))*Xp(:, :, i)'/J; % M x M
             wn = (W(:, :, i)*Vk) \ E(:, n);
@@ -282,7 +284,7 @@ YphOnYpYph = pagemrdivide(Yph, YpYph); % J x N x I, pagewise matrix right-divisi
 A = pagemtimes(Sp, YphOnYpYph); % 1 x N x I or M x N x I, pagewise matrix multiplication (Sp * Yp'/(Yp*Yp'))
 Ap = permute(A, [1, 2, 4, 3]); % M x N x 1 x I
 Ypp = permute(Yp, [4, 1, 2, 3]); % 1 x N x J x I
-fixY = Ap .* Ypp; % M x N x J x I
+fixY = Ap .* Ypp; % M x N x J x I, using implicit expansion
 fixY = permute(fixY, [4, 3, 2, 1]); % I x J x N x M
 
 % Readable implementation
