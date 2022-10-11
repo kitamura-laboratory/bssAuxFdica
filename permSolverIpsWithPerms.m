@@ -27,9 +27,8 @@ if ~isequal(size(mix), size(src)); error("Sizes of 'mix' and 'src' must be equal
 % Align estimated spectrogram using oracle source spectrogram
 est = zeros(nFreq, nTime, nSrc);
 perm = zeros(nFreq, nSrc);
-% 周波数毎に正しい順番になおす（正しい順番 := 二乗誤差最小）
-permutations = perms(1:nSrc); % 順列並び替え
-nPerm = size(permutations, 1); % n!
+permutations = perms(1:nSrc);
+nPerm = size(permutations, 1); % = nPn (= factorial(n))
 for iFreq = 1:nFreq
     for iPerm = 1:nPerm
         err(iPerm) = 0;
