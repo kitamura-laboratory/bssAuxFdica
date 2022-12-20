@@ -128,7 +128,7 @@ end
 [estSpecFdica, demixMat, cost] = local_auxFdica(obsSpecInput, nIter, srcModel, isDraw);
 
 % Apply projection back technique
-estSpecFdicaFix = local_projectionBack(estSpecFdica, obsSpec(:,:,refMic));
+[estSpecFdicaFix, demixMatFix] = local_projectionBack(estSpecFdica, obsSpec(:,:,refMic), demixMat);
 
 % Apply permutation solver
 if permSolver == "none"
@@ -136,7 +136,7 @@ if permSolver == "none"
 elseif permSolver == "COR"
     estSpec = permSolverCor(estSpecFdicaFix, args.isPowRatio, args.typeCor, args.deltaFreq, args.ratioFreq);
 elseif permSolver == "DOA"
-    estSpec = permSolverDoa(demixMat, estSpecFdicaFix, args.micPos, args.sampFreq);
+    estSpec = permSolverDoa(demixMatFix, estSpecFdicaFix, args.micPos, args.sampFreq);
 else % IPS
     srcSpect = F.DGT(squeeze(args.srcSig(:, args.refMic, :)));
     estSpec = permSolverIps(estSpecFdicaFix, srcSpect);
@@ -274,23 +274,27 @@ end
 end
 
 %--------------------------------------------------------------------------
-function fixY = local_projectionBack(Y, S)
+function [fixY, fixW] = local_projectionBack(Y, S, W)
 % Projection back technique to fix frequency-wise scales of estimated
 % spectrogram obtained by FDICA
 %
 % [inputs]
 %      Y: estimated spectrograms (I x J x N, nFreq x nTime x nSrc)
 %      S: reference channel of observed spectrogram (I x J x 1)
-%         or observed multichannel spectrogram (I x J x M, nFreq x nTime x nCh)
+%         or observed multichannel spectrogram (I x J x M, nFreq x nTime x nMic)
+%      W: estimated emixing matrix (N x N x I, nSrc x nCh x nFreq)
 %
 % [outputs]
 %   fixY: scale-fixed estimated spectrograms (I x J x N)
 %         or scale-fitted estimated source images (I x J x N x M)
+%   fixW: scale-fixed demixing matrix (N x N x I)
+%         or scale-fitted demixing matrix for source images (N x N x I x M)
 %
 
 % Projection back
 Yp = permute(Y, [3, 2, 1]); % N x J x I
 Sp = permute(S, [3, 2, 1]); % 1 x J x 1 or M x J x I
+Wp = permute(W, [4, 1, 2, 3]); % 1 x N x N x I
 Yph = pagectranspose(Yp); % J x N x I, pagewise Hermitian transpose (Yp')
 YpYph = pagemtimes(Yp, Yph); % N x N x I, pagewise matrix multiplication (Yp*Yp')
 YphOnYpYph = pagemrdivide(Yph, YpYph); % J x N x I, pagewise matrix right-division (Yp'/(Yp*Yp'))
@@ -299,6 +303,8 @@ Ap = permute(A, [1, 2, 4, 3]); % M x N x 1 x I
 Ypp = permute(Yp, [4, 1, 2, 3]); % 1 x N x J x I
 fixY = Ap .* Ypp; % M x N x J x I, using implicit expansion
 fixY = permute(fixY, [4, 3, 2, 1]); % I x J x N x M
+fixW = Ap .* Wp; % M x N x N x I, using implicit expansion
+fixW = permute(fixW, [2, 3, 4, 1]); % N x N x I x M
 
 % Readable implementation
 % [I, J, N] = size(Y, [1, 2, 3]); % nFreq x nTime x nSrc
@@ -311,10 +317,12 @@ fixY = permute(fixY, [4, 3, 2, 1]); % I x J x N x M
 %     end
 % end
 % fixY = zeros(I, J, N, M); % scale-fixed estimated spectrograms
+% fixW = zeros(N, N, I, M); % scale-fixed demixing matrix
 % for n = 1:N
 %     for m = 1:M
 %         for i = 1:I
 %             fixY(i, :, n, m) = A(m, n, i)*Y(i, :, n);
+%             fixW(n, :, i, m) = A(m, n, i)*W(n, :, i);
 %         end
 %     end
 % end
