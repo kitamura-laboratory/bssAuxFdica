@@ -10,11 +10,12 @@ fftSize = 4096; % window length in STFT [points]
 shiftSize = fftSize/2; % window shift length in STFT [points]
 nSrc = 2; % number of sources in observed signal
 nIter = 50; % number of iterations of FDICA
-isWhiten = true; % apply whitening before FDICA or not (true/false)
+isWhiten = false; % apply whitening before FDICA or not (true/false)
 srcModel = "LAP"; % generative model of each source ("LAP" or "TVG")
 refMic = 1; % index of reference microphone for projection back technique
 permSolver = "COR"; % type of permutation solver ("none", "COR", "DOA", or "IPS")
 isDraw = true; % plot spectrograms and cost function behavior for debug (true/false)
+isFilt = false; % apply time-domain demixing filter (true/false)
 micPos(1) = 0; % position of the first microphone [m]
 micPos(2) = 0.0566; % position of the second microphone [m]
 dataNo = 1; % file number of input data (see getInputFileNames) (1-8)
@@ -50,19 +51,19 @@ end
 estSig = bssAuxFdica(obsSig, nSrc, ...
     "fftSize", fftSize, "shiftSize", shiftSize, "nIter", nIter, ...
     "isWhiten", isWhiten, "srcModel", srcModel, "refMic", refMic, ...
-    "permSolver", permSolver, "isDraw", isDraw, "sampFreq", fs);
+    "permSolver", permSolver, "isDraw", isDraw, "sampFreq", fs, "isFilt", isFilt);
 
 % Sample for permSolver="DOA"
 % estSig = bssAuxFdica(obsSig, nSrc, ...
 %     "fftSize", fftSize, "shiftSize", shiftSize, "nIter", nIter, ...
 %     "isWhiten", isWhiten, "srcModel", srcModel, "refMic", refMic, ...
-%     "permSolver", permSolver, "isDraw", isDraw, "sampFreq", fs, "micPos", micPos);
+%     "permSolver", permSolver, "isDraw", isDraw, "sampFreq", fs, "micPos", micPos, "isFilt", isFilt);
 
 % Sample for permSolver="IPS"
 % estSig = bssAuxFdica(obsSig, nSrc, ...
 %     "fftSize", fftSize, "shiftSize", shiftSize, "nIter", nIter, ...
 %     "isWhiten", isWhiten, "srcModel", srcModel, "refMic", refMic, ...
-%     "permSolver", permSolver, "isDraw", isDraw, "sampFreq", fs, "srcSig", srcSig);
+%     "permSolver", permSolver, "isDraw", isDraw, "sampFreq", fs, "srcSig", srcSig, "isFilt", isFilt);
 
 %% Evaluation of BSS performance
 

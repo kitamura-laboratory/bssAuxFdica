@@ -63,6 +63,8 @@ function [estSig, cost] = bssAuxFdica(obsSig, nSrc, args)
 %              DOR-based permutation solver)
 %     srcSig*: oracle source image signals used for "IPS" permutation
 %              solver (sample x channel x source)
+%     isFilt*: apply time-domain demixing filter to avoid circular
+%              convoluation
 % Arguments with * are not necessary
 %
 % [Output]
@@ -97,6 +99,7 @@ arguments
     args.ratioFreq (1,1) double {mustBeInteger, mustBeNonnegative} = 2
     args.micPos (1,:) double {mustBeNonnegative}
     args.srcSig (:,:,:) double {mustBeNumeric}
+    args.isFilt (1,1) logical = false
 end
 fftSize = args.fftSize;
 shiftSize = args.shiftSize;
@@ -106,6 +109,7 @@ srcModel = args.srcModel;
 refMic = args.refMic;
 permSolver = args.permSolver;
 isDraw = args.isDraw;
+isFilt = args.isFilt;
 
 % Check argument errors
 [sigLen, nCh] = size(obsSig, [1, 2]);
@@ -116,6 +120,7 @@ if numel(refMic) > nCh; error("numel(refMic) must be equal or less than size(obs
 % Caluculate STFT
 F = DGTtool("windowName", "b", "windowLength", fftSize, "windowShift", shiftSize); % create DGTtool instance
 obsSpec = F.DGT(obsSig); % STFT
+nFreq = size(obsSpec, 1);
 
 % Apply whitening (decorrelation and normalization of observed signals)
 if isWhiten
@@ -133,17 +138,38 @@ end
 % Apply permutation solver
 if permSolver == "none"
     estSpec = estSpecFdicaFix;
+    estPerm = repmat(1:nSrc, [nFreq, 1]);
 elseif permSolver == "COR"
-    estSpec = permSolverCor(estSpecFdicaFix, args.isPowRatio, args.typeCor, args.deltaFreq, args.ratioFreq);
+    [estSpec, estPerm] = permSolverCor(estSpecFdicaFix, args.isPowRatio, args.typeCor, args.deltaFreq, args.ratioFreq);
 elseif permSolver == "DOA"
-    estSpec = permSolverDoa(demixMatFix, estSpecFdicaFix, args.micPos, args.sampFreq);
+    [estSpec, estPerm] = permSolverDoa(demixMatFix, estSpecFdicaFix, args.micPos, args.sampFreq);
 else % IPS
     srcSpect = F.DGT(squeeze(args.srcSig(:, args.refMic, :)));
-    estSpec = permSolverIps(estSpecFdicaFix, srcSpect);
+    [estSpec, estPerm] = permSolverIps(estSpecFdicaFix, srcSpect);
+end
+for iFreq = 1:nFreq
+    demixMatFix(:, :, iFreq) = demixMatFix(estPerm(iFreq, :), :, iFreq);
 end
 
-% Calculate inverse STFT
-estSig = F.pinv(estSpec);
+% Calculate estimated time-domain signal
+if isFilt
+    % Apply demixing filter in time domain to avoid circular convolution
+    obsSigInput = F.pinv(obsSpecInput); % observed signal
+    W = cat(3, demixMatFix, flip(conj(demixMatFix(:, :, 2:end-1)), 3)); % produce beyond Nyquist components
+    demixFilt = real(ifft(W, fftSize, 3)); % fftSize x nSrc x nMic
+    demixFilt = circshift(demixFilt, fftSize/2+1, 3); % move peak to center by circular shifting
+    for iSrc = 1:nSrc
+        for iCh = 1:nCh
+            f = squeeze(demixFilt(iSrc, iCh, :));
+            tmp(:, iCh) = conv(obsSigInput(:, iCh), f); % linear convolution
+        end
+        estSig(:, iSrc) = sum(tmp, 2);
+    end
+    estSig(1:fftSize/2+1,:) = []; % cut initial components caused by group delay (circular shifting)
+else
+    % Calculate inverse STFT
+    estSig = F.pinv(estSpec);
+end
 estSig = estSig(1:sigLen, :);
 
 % Plot spectrograms and cost function behavior
@@ -225,9 +251,9 @@ fprintf("Iteration:    ");
 for iIter = 1:nIter
     fprintf("\b\b\b\b%4d", iIter);
     if srcModel == "LAP"
-        Rp = max(abs(Yp), 100*eps);
+        Rp = max(abs(Yp), 10000*eps);
     elseif srcModel == "TVG"
-        Rp = max(abs(Yp).^2, 100*eps);
+        Rp = max(abs(Yp).^2, 10000*eps);
     end
     
     invRp = 1./Rp; % N x J x I
